@@ -93,16 +93,51 @@ def orb(img, num_features=500, threshold=100, response_threshold=0.5):
 
     return unique_keypoints, descriptors
 
+# 매칭 시각화
+def draw_matches(ref_img, ref_keypoints, tgt_img, tgt_keypoints, matches):
+    # 두 이미지를 나란히 연결
+    ref_img_color = cv2.cvtColor(ref_img, cv2.COLOR_GRAY2BGR)
+    tgt_img_color = cv2.cvtColor(tgt_img, cv2.COLOR_GRAY2BGR)
+    combined_img = np.hstack((ref_img_color, tgt_img_color))
+    h, w = ref_img.shape
+
+    # 매칭 시각화 ramom으로 10개만 표시
+    np.random.seed(42)
+    matches = np.array(matches)
+    np.random.shuffle(matches)
+    matches = matches[:10]
+    for m in matches:
+        pt1 = tuple(map(int, ref_keypoints[m[0]]))
+        pt2 = tuple(map(int, tgt_keypoints[m[1]]))
+        pt2 = (pt2[0] + w, pt2[1])  # 두 번째 이미지의 좌표는 오른쪽으로 이동
+        cv2.line(combined_img, pt1, pt2, (0, 255, 0), 1)
+
+    return combined_img
+# 매칭 수행
+def match_descriptors(desc1, desc2):
+    matches = []
+    for i, d1 in enumerate(desc1):
+        best_distance = float('inf')
+        best_match = -1
+        for j, d2 in enumerate(desc2):
+            distance = np.sum(d1 != d2)  # Hamming distance
+            if distance < best_distance:
+                best_distance = distance
+                best_match = j
+        if best_distance < 50:  # 임계값
+            matches.append((i, best_match))
+    return matches
 # 테스트
 if __name__ == "__main__":
-    img = cv2.imread("left01.jpg", cv2.IMREAD_GRAYSCALE)
-    keypoints, descriptors = orb(img)
-    # 흑백 이미지를 컬러로 변환 (BGR)
-    img_color = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    # 결과 시각화
-    for x, y in keypoints:
-        cv2.circle(img_color, (x, y), 3, (255, 0, 0), -1)
-
-    cv2.imshow("ORB Keypoints", img_color)
+    ref_img = cv2.imread("left01.jpg", cv2.IMREAD_GRAYSCALE)
+    tgt_img = cv2.imread("left02.jpg", cv2.IMREAD_GRAYSCALE)
+    # ORB 특징점 추출
+    ref_keypoints, ref_descriptors = orb(ref_img)
+    tgt_keypoints, tgt_descriptors = orb(tgt_img)
+    # 디스크립터 매칭
+    matches = match_descriptors(ref_descriptors, tgt_descriptors)
+    # 매칭 결과 시각화
+    combined_img = draw_matches(ref_img, ref_keypoints, tgt_img, tgt_keypoints, matches)
+    cv2.imshow("ORB Feature Matching", combined_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
