@@ -18,14 +18,27 @@ reference_image = cv2.imread(reference_image_path, cv2.IMREAD_GRAYSCALE)
 # ORB 생성
 orb = cv2.ORB_create()
 
-# 레퍼런스 이미지에서 특징점과 서술자 추출
-ref_keypoints, ref_descriptors = orb.detectAndCompute(reference_image, None)
-
 # BFMatcher 생성
 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
 # 현재 이미지 인덱스
 current_index = 1
+
+# 좌측 상단과 우측 하단 좌표 저장 변수
+region_start = None
+region_end = None
+
+# 영역을 지정하는 마우스 콜백 함수
+def select_region(event, x, y, flags, param):
+    global region_start, region_end
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        if region_start is None:
+            region_start = (x, y)
+            print(f"Top-left corner selected: {region_start}")
+        elif region_end is None:
+            region_end = (x, y)
+            print(f"Bottom-right corner selected: {region_end}")
 
 # 결과를 표시하는 함수
 def display_matching(reference, current, matches, keypoints_ref, keypoints_cur):
@@ -37,22 +50,34 @@ def display_matching(reference, current, matches, keypoints_ref, keypoints_cur):
 
 # 마우스 클릭 콜백 함수
 def on_mouse_click(event, x, y, flags, param):
-    global current_index
+    global current_index, region_start, region_end
 
     if event == cv2.EVENT_LBUTTONDOWN and current_index < len(image_files):
+        if region_start is None or region_end is None:
+            print("Please select the region first by clicking top-left and bottom-right corners.")
+            return
+
         # 다음 이미지 읽기
         current_image_path = image_files[current_index]
         current_image = cv2.imread(current_image_path, cv2.IMREAD_GRAYSCALE)
 
-        # 현재 이미지의 특징점과 서술자 추출
-        cur_keypoints, cur_descriptors = orb.detectAndCompute(current_image, None)
+        # 선택된 영역 자르기
+        x1, y1 = region_start
+        x2, y2 = region_end
+        cropped_ref = reference_image[y1:y2, x1:x2]
+        cropped_cur = current_image[y1:y2, x1:x2]
+
+        # 특징점 추출
+        ref_keypoints, ref_descriptors = orb.detectAndCompute(cropped_ref, None)
+        cur_keypoints, cur_descriptors = orb.detectAndCompute(cropped_cur, None)
 
         # 매칭 수행
-        matches = bf.match(ref_descriptors, cur_descriptors)
-        matches = sorted(matches, key=lambda x: x.distance)  # 거리 기준으로 정렬
+        if ref_descriptors is not None and cur_descriptors is not None:
+            matches = bf.match(ref_descriptors, cur_descriptors)
+            matches = sorted(matches, key=lambda x: x.distance)  # 거리 기준으로 정렬
 
-        # 매칭 결과 표시
-        display_matching(reference_image, current_image, matches[:20], ref_keypoints, cur_keypoints)
+            # 매칭 결과 표시
+            display_matching(cropped_ref, cropped_cur, matches[:20], ref_keypoints, cur_keypoints)
 
         # 인덱스 증가
         current_index += 1
@@ -63,10 +88,16 @@ def on_mouse_click(event, x, y, flags, param):
 cv2.namedWindow("Feature Matching")
 cv2.setMouseCallback("Feature Matching", on_mouse_click)
 
-print("Click on the window to process the next image.")
+# 영역 선택 창 설정
+cv2.namedWindow("Select Region")
+cv2.setMouseCallback("Select Region", select_region)
+
+print("1. Select the region by clicking the top-left and bottom-right corners in the 'Select Region' window.")
+print("2. Click on the 'Feature Matching' window to process the next image.")
 
 # 첫 번째 이미지를 보여줌
-cv2.imshow("Feature Matching", reference_image)
+cv2.imshow("Select Region", reference_image)
+cv2.imshow("Feature Matching", np.zeros_like(reference_image))
 cv2.waitKey(0)
 
 cv2.destroyAllWindows()
