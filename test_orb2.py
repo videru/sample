@@ -8,7 +8,7 @@ image_folder = "path_to_your_image_folder"
 
 # 이미지 리스트 가져오기
 image_files = sorted([
-    os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+    os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith(('.png', '.jpg', '.bmp'))
 ])
 
 # 레퍼런스 이미지 설정
@@ -98,8 +98,9 @@ print("2. Click on the 'Feature Matching' window to process the next image.")
 # 첫 번째 이미지를 보여줌
 cv2.imshow("Select Region", reference_image)
 cv2.imshow("Feature Matching", np.zeros_like(reference_image))
-        cv2.resizeWindow("Feature Matching", result_image.shape[1], result_image.shape[0])
+cv2.namedWindow("Feature Matching", cv2.WINDOW_NORMAL)
+cv2.imshow("Feature Matching", result_image)
+cv2.resizeWindow("Feature Matching", result_image.shape[1], result_image.shape[0])
 cv2.waitKey(0)
 
 cv2.destroyAllWindows()
-
