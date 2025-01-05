@@ -42,15 +42,18 @@ def select_region(event, x, y, flags, param):
 
 # 결과를 표시하는 함수
 def display_matching(reference, current, matches, keypoints_ref, keypoints_cur):
+    global result_image
     # 매칭 결과 시각화
     result_image = cv2.drawMatches(reference, keypoints_ref, current, keypoints_cur, matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
     # 이미지 보여주기
+    cv2.namedWindow("Feature Matching", cv2.WINDOW_NORMAL)
     cv2.imshow("Feature Matching", result_image)
+    cv2.resizeWindow("Feature Matching", result_image.shape[1], result_image.shape[0])
 
 # 마우스 클릭 콜백 함수
 def on_mouse_click(event, x, y, flags, param):
-    global current_index, region_start, region_end
+    global current_index, region_start, region_end, result_image
 
     if event == cv2.EVENT_LBUTTONDOWN and current_index < len(image_files):
         if region_start is None or region_end is None:
@@ -85,12 +88,10 @@ def on_mouse_click(event, x, y, flags, param):
         print("No more images to process.")
 
 # OpenCV 윈도우 설정
-cv2.namedWindow("Feature Matching")
-cv2.setMouseCallback("Feature Matching", on_mouse_click)
-
-# 영역 선택 창 설정
 cv2.namedWindow("Select Region")
 cv2.setMouseCallback("Select Region", select_region)
+cv2.namedWindow("Feature Matching", cv2.WINDOW_NORMAL)
+cv2.setMouseCallback("Feature Matching", on_mouse_click)
 
 print("1. Select the region by clicking the top-left and bottom-right corners in the 'Select Region' window.")
 print("2. Click on the 'Feature Matching' window to process the next image.")
@@ -98,9 +99,6 @@ print("2. Click on the 'Feature Matching' window to process the next image.")
 # 첫 번째 이미지를 보여줌
 cv2.imshow("Select Region", reference_image)
 cv2.imshow("Feature Matching", np.zeros_like(reference_image))
-cv2.namedWindow("Feature Matching", cv2.WINDOW_NORMAL)
-cv2.imshow("Feature Matching", result_image)
-cv2.resizeWindow("Feature Matching", result_image.shape[1], result_image.shape[0])
 cv2.waitKey(0)
 
 cv2.destroyAllWindows()
