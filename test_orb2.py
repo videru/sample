@@ -98,6 +98,8 @@ print("2. Click on the 'Feature Matching' window to process the next image.")
 # 첫 번째 이미지를 보여줌
 cv2.imshow("Select Region", reference_image)
 cv2.imshow("Feature Matching", np.zeros_like(reference_image))
+        cv2.resizeWindow("Feature Matching", result_image.shape[1], result_image.shape[0])
 cv2.waitKey(0)
 
 cv2.destroyAllWindows()
+
